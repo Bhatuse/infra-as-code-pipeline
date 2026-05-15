@@ -61,4 +61,7 @@ resource "aws_ecs_service" "app" {
   deployment_controller {
     type = "ECS"
   }
+
+  health_check_grace_period_seconds = 60
+  
 }
