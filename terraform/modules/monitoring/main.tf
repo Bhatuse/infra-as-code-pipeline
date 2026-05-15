@@ -5,10 +5,10 @@ resource "aws_cloudwatch_dashboard" "main" {
   dashboard_body = jsonencode({
     widgets = [
       {
-        type   = "metric"
+        type = "metric"
         properties = {
           metrics = [
-            [ "AWS/ECS", "CPUUtilization", "ServiceName", "app-service-${var.environment}", "ClusterName", "capstone-cluster-${var.environment}" ]
+            ["AWS/ECS", "CPUUtilization", "ServiceName", "app-service-${var.environment}", "ClusterName", "capstone-cluster-${var.environment}"]
           ]
           period = 300
           stat   = "Average"

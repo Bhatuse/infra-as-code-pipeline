@@ -29,8 +29,8 @@ module "compute" {
 }
 
 module "monitoring" {
-  source      = "../../modules/monitoring"
-  environment = "production"
+  source       = "../../modules/monitoring"
+  environment  = "production"
   cluster_name = module.compute.cluster_name
   service_name = "app-service-production" # This matches the name defined in modules/compute/main.tf
 }

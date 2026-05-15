@@ -1,8 +1,8 @@
 # --- ALB Security Group ---
 # Allows public web traffic (Port 80) to hit the Load Balancer
 resource "aws_security_group" "alb_sg" {
-  name        = "alb-sg-${var.environment}"
-  vpc_id      = var.vpc_id
+  name   = "alb-sg-${var.environment}"
+  vpc_id = var.vpc_id
 
   ingress {
     from_port   = 80
@@ -22,8 +22,8 @@ resource "aws_security_group" "alb_sg" {
 # --- ECS Task Security Group ---
 # Only allows traffic from the ALB Security Group on Port 3000
 resource "aws_security_group" "ecs_sg" {
-  name        = "ecs-tasks-sg-${var.environment}"
-  vpc_id      = var.vpc_id
+  name   = "ecs-tasks-sg-${var.environment}"
+  vpc_id = var.vpc_id
 
   ingress {
     from_port       = 3000
@@ -48,8 +48,8 @@ resource "aws_iam_role" "ecs_task_execution_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
       Principal = { Service = "ecs-tasks.amazonaws.com" }
     }]
   })

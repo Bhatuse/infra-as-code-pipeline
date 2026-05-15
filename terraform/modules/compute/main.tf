@@ -19,8 +19,8 @@ resource "aws_ecs_task_definition" "app" {
   execution_role_arn       = var.execution_role_arn
 
   container_definitions = jsonencode([{
-    name      = "app"
-    image     = "${var.ecr_repo_url}:latest"
+    name         = "app"
+    image        = "${var.ecr_repo_url}:latest"
     portMappings = [{ containerPort = 3000 }]
     logConfiguration = {
       logDriver = "awslogs"
@@ -42,8 +42,8 @@ resource "aws_ecs_service" "app" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = var.private_subnet_ids
-    security_groups = [var.ecs_sg_id]
+    subnets          = var.private_subnet_ids
+    security_groups  = [var.ecs_sg_id]
     assign_public_ip = false
   }
 
@@ -63,5 +63,5 @@ resource "aws_ecs_service" "app" {
   }
 
   health_check_grace_period_seconds = 60
-  
+
 }
