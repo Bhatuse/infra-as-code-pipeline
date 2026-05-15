@@ -6,7 +6,6 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# Track when the app started for Uptime calculation
 START_TIME = time.time()
 
 @app.route('/')
