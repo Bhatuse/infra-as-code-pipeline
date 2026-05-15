@@ -76,6 +76,10 @@ DASHBOARD_HTML = """
 def dashboard():
     return render_template_string(DASHBOARD_HTML, env_name=os.getenv("ENV_NAME", "dev"))
 
+@app.route('/health')
+def health():
+    return jsonify({"status": "healthy"}), 200
+
 @app.route('/stats')
 def get_stats():
     return jsonify({
@@ -84,4 +88,4 @@ def get_stats():
     })
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=3000)
