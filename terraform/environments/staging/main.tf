@@ -1,7 +1,7 @@
 module "networking" {
   source      = "../../modules/networking"
   environment = "staging"
-  vpc_cidr    = "10.3.0.0/16"
+  vpc_cidr    = "10.1.0.0/16"
 }
 
 module "security" {
@@ -21,8 +21,8 @@ module "alb" {
 module "compute" {
   source             = "../../modules/compute"
   environment        = "staging"
-  ecr_repo_url       = "437229446821.dkr.ecr.ap-south-1.amazonaws.com/my-app" # Replace with your ECR
-  execution_role_arn  = module.security.execution_role_arn
+  ecr_repo_url       = data.terraform_remote_state.global_ecr.outputs.ecr_repository_url
+  execution_role_arn = module.security.execution_role_arn
   ecs_sg_id          = module.security.ecs_sg_id
   private_subnet_ids = module.networking.private_subnet_ids
   target_group_arn   = module.alb.target_group_arn

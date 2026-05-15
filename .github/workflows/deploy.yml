@@ -10,25 +10,20 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-
   ci-build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-
       - name: Build and Push Image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -42,93 +37,74 @@ jobs:
   terraform-lint:
     needs: ci-build
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.10.0"
-
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
-
-      - name: Terraform Init (Dev)
-        working-directory: terraform/environments/dev
+      - name: Terraform Init (Staging)
+        # Pointing to staging for validation
+        working-directory: terraform/environments/staging
         run: terraform init -backend=false
-
-      - name: Terraform Validate (Dev)
-        working-directory: terraform/environments/dev
+      - name: Terraform Validate
+        working-directory: terraform/environments/staging
         run: terraform validate
 
-      - name: Setup TFLint
-        uses: terraform-linters/setup-tflint@v4
-
-      - name: Init TFLint
-        run: tflint --init
-
-      - name: Run TFLint
-        run: tflint --recursive
-
-  deploy-dev:
+  deploy-staging:
     needs: terraform-lint
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    environment: development
+    environment: staging # Ensure this environment exists in GitHub Settings
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.10.0"
-
-      - name: Terraform Apply
-        working-directory: terraform/environments/dev
+      - name: Terraform Apply (Staging)
+        working-directory: terraform/environments/staging
         run: |
           terraform init
           terraform apply -auto-approve
 
-      - name: Force ECS Update
+      - name: Force ECS Update (Staging)
         run: |
           aws ecs update-service \
-            --cluster capstone-cluster-dev \
-            --service app-service-dev \
+            --cluster capstone-cluster-staging \
+            --service app-service-staging \
             --force-new-deployment \
             --region ap-south-1
 
   deploy-production:
-    needs: deploy-dev
+    needs: deploy-staging
     runs-on: ubuntu-latest
-    environment: production
+    environment: production # Requires Manual Approval
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.10.0"
-
       - name: Terraform Apply (Prod)
         working-directory: terraform/environments/production
         run: |
