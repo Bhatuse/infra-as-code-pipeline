@@ -18,7 +18,7 @@
 
 ## Architecture
 
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/3773598a-02a9-4551-b392-8b3b33e0c45d" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/4c468a09-0ab8-4333-b059-aa4e9ce95e16" />
 
 
 ---
@@ -116,10 +116,7 @@ SHA tagged    and syntax      + smoke test              production runs
 
 ## Setup Instructions
 
-### 1. Bootstrap (one time only)
-[S3 + DynamoDB commands]
-
-### 2. Configure GitHub Secrets
+### 1. Configure GitHub Secrets
 Add these in GitHub → Settings → Secrets → Actions:
 | Secret | Value |
 |--------|-------|
@@ -129,7 +126,7 @@ Add these in GitHub → Settings → Secrets → Actions:
 | ECR_REPOSITORY | your ECR repo name |
 | STAGING_ALB_URL | staging ALB DNS |
 
-### 3. Deploy
+### 2. Deploy
 git push origin main
 # Pipeline auto-deploys to staging
 # Approve the production gate in GitHub Actions
