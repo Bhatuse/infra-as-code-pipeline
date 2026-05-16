@@ -35,7 +35,8 @@ DASHBOARD_HTML = """<!DOCTYPE html>
 
   html, body {
     height: 100%;
-    background: var(--black);
+    /* A deep, sleek dark blue/gray base instead of pure black */
+    background: #030712; 
     color: var(--white);
     font-family: var(--sans);
     font-size: 14px;
@@ -49,6 +50,24 @@ DASHBOARD_HTML = """<!DOCTYPE html>
     min-height: 100vh;
     padding: 0;
     overflow-x: hidden;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* This creates the floating gradient blur effect */
+  body::before {
+    content: "";
+    position: fixed;
+    top: -20%;
+    left: -10%;
+    width: 120%;
+    height: 120%;
+    background: 
+      radial-gradient(circle at 30% 70%, rgba(56, 189, 248, 0.15), transparent 40%),
+      radial-gradient(circle at 70% 30%, rgba(139, 92, 246, 0.15), transparent 40%);
+    filter: blur(80px);
+    z-index: -1;
+    pointer-events: none;
   }
 
   /* ── TOP NAV ── */
@@ -60,7 +79,7 @@ DASHBOARD_HTML = """<!DOCTYPE html>
     border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
-    background: rgba(0,0,0,0.85);
+    background: rgba(3, 7, 18, 0.6);
     backdrop-filter: blur(20px);
     z-index: 100;
   }
@@ -180,14 +199,19 @@ DASHBOARD_HTML = """<!DOCTYPE html>
   }
 
   .metric-card {
-    background: var(--black);
+    /* Semi-transparent background for the glass effect */
+    background: rgba(15, 23, 42, 0.6); 
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     padding: 28px 28px 24px;
     position: relative;
-    transition: background 0.2s;
+    transition: background 0.3s ease, transform 0.3s ease;
     cursor: default;
   }
 
-  .metric-card:hover { background: var(--faint); }
+  .metric-card:hover { 
+    background: rgba(30, 41, 59, 0.7); 
+  }
 
   .metric-label {
     font-family: var(--mono);
@@ -255,14 +279,20 @@ DASHBOARD_HTML = """<!DOCTYPE html>
   }
 
   .chart-card {
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 28px;
     position: relative;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, background 0.3s ease;
   }
 
-  .chart-card:hover { border-color: var(--border-hover); }
+  .chart-card:hover { 
+    border-color: var(--border-hover); 
+    background: rgba(30, 41, 59, 0.5);
+  }
 
   .chart-header {
     display: flex;
