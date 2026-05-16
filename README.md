@@ -35,21 +35,6 @@ SHA tagged    and syntax      + smoke test              production runs
 
 ---
 
-## Tech Stack
-| Layer          | Technology                    |
-|----------------|-------------------------------|
-| Infrastructure | Terraform (modularized)        |
-| Compute        | AWS ECS Fargate               |
-| Registry       | AWS ECR                       |
-| Load Balancer  | AWS ALB                       |
-| Networking     | AWS VPC (public/private)      |
-| Monitoring     | AWS CloudWatch                |
-| CI/CD          | GitHub Actions                |
-| Application    | Python Flask + Gunicorn       |
-
----
-
-## Project Structure
 ## Project Structure
 
 ```text
