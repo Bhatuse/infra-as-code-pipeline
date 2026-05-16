@@ -18,6 +18,10 @@
 
 ## Architecture
 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/3773598a-02a9-4551-b392-8b3b33e0c45d" />
+
+
+---
 Internet → ALB (public subnet) → ECS Fargate Tasks (private subnet)
                                         ↑
                                    ECR (Docker images)
