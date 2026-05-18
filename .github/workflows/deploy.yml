@@ -1,80 +1,191 @@
-name: "DevOps Pipeline"
+name: "DevSecOps Pipeline"
 
 on:
   push:
     branches: [ main ]
+
   pull_request:
     branches: [ main ]
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
-  ci-build:
+
+  gitleaks-scan:
+    name: Gitleaks Secret Scan
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-      - name: Build and Push Image
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
         env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          docker build -t $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG ./app
-          docker push $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG
-          docker tag $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY }}:latest
-          docker push $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY }}:latest
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
   terraform-lint:
-    needs: ci-build
+    name: Terraform Validation & Linting
+    needs: gitleaks-scan
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.10.0"
+
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
+
       - name: Terraform Init (Staging)
-        # Pointing to staging for validation
         working-directory: terraform/environments/staging
         run: terraform init -backend=false
+
       - name: Terraform Validate
         working-directory: terraform/environments/staging
         run: terraform validate
 
-  deploy-staging:
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+
+      - name: Initialize TFLint
+        run: tflint --init
+
+      - name: Run TFLint
+        run: tflint --recursive
+
+  checkov-scan:
+    name: Checkov IaC Security Scan
     needs: terraform-lint
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    environment: staging # Ensure this environment exists in GitHub Settings
 
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: terraform
+
+  semgrep-scan:
+    name: Semgrep Security Scan
+    needs: terraform-lint
+    runs-on: ubuntu-latest
+
+    container:
+      image: semgrep/semgrep
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        run: semgrep scan --config auto
+
+  ci-build:
+    name: Build & Push Docker Image
+    needs:
+      - gitleaks-scan
+      - snyk-scan
+      - terraform-lint
+      - tfsec-scan
+      - checkov-scan
+      - semgrep-scan
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push Docker Image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+
+        run: |
+          docker build \
+            -t $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG \
+            ./app
+
+          docker push \
+            $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG
+
+  trivy-scan:
+    name: Trivy Container Scan
+    needs: ci-build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Run Trivy Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
+          format: table
+          exit-code: 1
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: trivy-scan
+
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.10.0"
+
       - name: Terraform Apply (Staging)
         working-directory: terraform/environments/staging
+
         run: |
           terraform init
           terraform apply -auto-approve
@@ -88,25 +199,33 @@ jobs:
             --region ap-south-1
 
   deploy-production:
+    name: Deploy to Production
     needs: deploy-staging
+
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
     runs-on: ubuntu-latest
-    environment: production # Requires Manual Approval
+    environment: production
 
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.10.0"
-      - name: Terraform Apply (Prod)
+
+      - name: Terraform Apply (Production)
         working-directory: terraform/environments/production
+
         run: |
           terraform init
           terraform apply -auto-approve
