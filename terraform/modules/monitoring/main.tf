@@ -1,4 +1,12 @@
 # CloudWatch Dashboard
+terraform {
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+    }
+  }
+}
+
 resource "aws_cloudwatch_dashboard" "main" {
   dashboard_name = "ECS-Monitoring-${var.environment}"
 

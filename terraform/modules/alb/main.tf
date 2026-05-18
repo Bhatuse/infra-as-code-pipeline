@@ -1,4 +1,12 @@
 # --- 1. The Load Balancer ---
+terraform {
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+    }
+  }
+}
+
 resource "aws_lb" "main" {
   name               = "capstone-alb-${var.environment}"
   internal           = false

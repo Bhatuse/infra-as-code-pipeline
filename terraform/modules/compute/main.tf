@@ -1,4 +1,13 @@
 # --- 1. The Cluster (The Folder) ---
+
+terraform {
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+    }
+  }
+}
+
 resource "aws_ecs_cluster" "main" {
   name = "capstone-cluster-${var.environment}"
 }

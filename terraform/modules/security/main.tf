@@ -1,5 +1,13 @@
 # --- ALB Security Group ---
 # Allows public web traffic (Port 80) to hit the Load Balancer
+terraform {
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+    }
+  }
+}
+
 resource "aws_security_group" "alb_sg" {
   name   = "alb-sg-${var.environment}"
   vpc_id = var.vpc_id
