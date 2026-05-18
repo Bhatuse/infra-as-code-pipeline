@@ -1,9 +1,12 @@
 # --- ALB Security Group ---
 # Allows public web traffic (Port 80) to hit the Load Balancer
 terraform {
+  required_version = ">= 1.5.0"
+
   required_providers {
     aws = {
-      source = "hashicorp/aws"
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
     }
   }
 }
