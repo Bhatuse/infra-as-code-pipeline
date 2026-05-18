@@ -90,11 +90,11 @@ jobs:
 
   ci-build:
     name: Build & Push Docker Image
-      needs:
-        - gitleaks-scan
-        - terraform-lint
-        - checkov-scan
-        - semgrep-scan
+    needs:
+       - gitleaks-scan
+       - terraform-lint
+       - checkov-scan
+       - semgrep-scan
 
     runs-on: ubuntu-latest
 
