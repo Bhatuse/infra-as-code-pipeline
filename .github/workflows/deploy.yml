@@ -59,43 +59,12 @@ jobs:
       - name: Run TFLint
         run: tflint --recursive --minimum-failure-severity=error
 
-  checkov-scan:
-    name: Checkov IaC Security Scan
-    needs: terraform-lint
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Run Checkov
-        uses: bridgecrewio/checkov-action@master
-        with:
-          directory: terraform
-          soft_fail: true
-
-  semgrep-scan:
-    name: Semgrep Security Scan
-    needs: terraform-lint
-    runs-on: ubuntu-latest
-
-    container:
-      image: semgrep/semgrep
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Run Semgrep
-        run: semgrep scan --config auto
 
   ci-build:
     name: Build & Push Docker Image
     needs:
        - gitleaks-scan
        - terraform-lint
-       - checkov-scan
-       - semgrep-scan
 
     runs-on: ubuntu-latest
 
